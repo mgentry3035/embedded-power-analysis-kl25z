@@ -1,6 +1,7 @@
 #include <MKL25Z4.h>
 #include "debug.h"
 
+//hardware pin mapping for all debug signals
 debug_GPIO_struct debug_GPIO[DBG_NUM_SIGNALS] = {
 							{0, 0, FPTD, PORTD},
 							{0, 2, FPTD, PORTD},
@@ -19,6 +20,7 @@ debug_GPIO_struct debug_GPIO[DBG_NUM_SIGNALS] = {
 							{0, 31, FPTB, PORTB }, // NULL
 						};	
 
+//Prepare necessary registers to be used as debug signals
 void Init_Debug_Signals(void) {
 	int i;
 
@@ -29,8 +31,8 @@ void Init_Debug_Signals(void) {
 #endif	
 	
 	for (i=0; i<DBG_NUM_SIGNALS; i++) {
-		debug_GPIO[i].Port->PCR[debug_GPIO[i].Bit] &= ~PORT_PCR_MUX_MASK; // Make pin GPIO          
-		debug_GPIO[i].Port->PCR[debug_GPIO[i].Bit] |= PORT_PCR_MUX(1);          
+		debug_GPIO[i].Port->PCR[debug_GPIO[i].Bit] &= ~PORT_PCR_MUX_MASK; // Clear Register         
+		debug_GPIO[i].Port->PCR[debug_GPIO[i].Bit] |= PORT_PCR_MUX(1); //Set to GPIO         
 		debug_GPIO[i].FPt->PDDR |= MASK(debug_GPIO[i].Bit);	 // Make an output
 		debug_GPIO[i].FPt->PCOR = MASK(debug_GPIO[i].Bit); // Clear output
 	}
@@ -54,6 +56,7 @@ void Init_Debug_Signals(void) {
 #endif
 }	
 
+//Test integrity and responsiveness of previously defined GPIO signals
 void Debug_Set(uint32_t * signals, uint32_t count, uint32_t value) {
 #if DBG_SAFE_BUT_SLOW
 	int mask = 1;
