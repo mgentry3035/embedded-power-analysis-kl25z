@@ -66,7 +66,11 @@ f_cpu				f_Bus 		Duration		OUTDIV
 #else
 #define INST_DEBUG_SET(x,y,z) Debug_Set(x,y,z);
 #endif
-																
+
+//Adjust bus/core dividers depending on clk or power modes
+//F_core: clock speed for CPU, system buses, flash memory, RTOS task timing
+//F_Bus: clock speed for peripherals
+//F_BUS = F_CORE/(OUTDIV+1)
 void Set_OUTDIV(uint32_t outdiv1, uint32_t outdiv4) {
 /* 	VLP data
 		F_CORE  F_BUS		OUTDIV1		OUTDIV4
@@ -83,6 +87,7 @@ void Set_OUTDIV(uint32_t outdiv1, uint32_t outdiv4) {
 	SIM->CLKDIV1 = (SIM->CLKDIV1 & ~SIM_CLKDIV1_OUTDIV4_MASK)| SIM_CLKDIV1_OUTDIV4(outdiv4);
 }
 
+//Low overhead method of measuring execution time of various operations
 void Fast_Instrumented_Delay_Loop(void) {
 	DEBUG_START(DBG_INST_DLY);
 	for (int i=DELAY_LOOP_COUNT; i>0; i--) // Loop
@@ -589,17 +594,22 @@ void LP_Testing(void) {
   MAIN function
  *----------------------------------------------------------------------------*/
 int main (void) {
+
+	//GPIO and debug setup----------------------------------------------------------
 	Init_Debug_Signals();
 	Init_RGB_LEDs();
-	
+
+	//clock calibration and stabilization step--------------------------------------
 	// LP_Testing2();
-	Select_FEI_Fast();
-	
+	Select_FEI_Fast(); 
+
+	//Sound driver init step--------------------------------------------------------
 	Sound_Init();	
 	Sound_Enable_Amp(1);
 	Play_Tone();
 	Sound_Enable_Amp(0);
-	
+
+	//LCD setup---------------------------------------------------------------------
 	LCD_Init();
 	LCD_Text_Init(1);
 	LCD_Erase();
@@ -609,7 +619,8 @@ int main (void) {
 	LCD_Set_Backlight_Brightness(15);
 	while (1);
 #endif
-	
+
+	//3-axis accelerometer setup----------------------------------------------------
 	LCD_Text_PrintStr_RC(1,0, "Accel...");
 	i2c_init();											// init I2C peripheral
 	if (!init_mma()) {							// init accelerometer
