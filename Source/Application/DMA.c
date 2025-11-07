@@ -13,19 +13,22 @@ uint16_t * Reload_DMA_Source[2]={0,0};
 uint32_t Reload_DMA_Byte_Count=0;
 uint32_t DMA_Playback_Count=0;
 
+//Enable clock signals for DMA and DMA mux
+//DMA controller moves data, DMA mux chooses which peripheral
 void DMA_Init(void) {
 	SIM->SCGC7 |= SIM_SCGC7_DMA_MASK;
 	SIM->SCGC6 |= SIM_SCGC6_DMAMUX_MASK;
 }
 
+//Transfer audio data from memory to playback
 void Configure_DMA_For_Playback(uint16_t * source1, uint16_t * source2, uint32_t count, uint32_t num_playbacks) {
 	
 	// Disable DMA channel in order to allow changes
 	DMAMUX0->CHCFG[0] = 0;
 
+	//Load playback params
 	Reload_DMA_Source[0] = source1;
 	Reload_DMA_Source[1] = source2;
-
 	Reload_DMA_Byte_Count = count*2;
 	DMA_Playback_Count = num_playbacks;
 	
@@ -39,7 +42,7 @@ void Configure_DMA_For_Playback(uint16_t * source1, uint16_t * source2, uint32_t
 
 	
 	// Configure NVIC for DMA ISR
-	NVIC_SetPriority(DMA0_IRQn, 128); // 0, 64, 128 or 192
+	NVIC_SetPriority(DMA0_IRQn, 128); // 0, 64, 128 or 192---priority level
 	NVIC_ClearPendingIRQ(DMA0_IRQn); 
 	NVIC_EnableIRQ(DMA0_IRQn);	
 
@@ -48,12 +51,15 @@ void Configure_DMA_For_Playback(uint16_t * source1, uint16_t * source2, uint32_t
 	DMAMUX0->CHCFG[0] = DMAMUX_CHCFG_SOURCE(56);   
 }
 
+//calculates # bytes transfered
+//calculates bytes per transfer
+//calculates total transfers
 int32_t Get_DMA_Transfers_Completed(uint32_t ch) {
 	// Get progress from byte count register
-	int32_t bytes_xferred = Reload_DMA_Byte_Count - (DMA0->DMA[ch].DSR_BCR & DMA_DSR_BCR_BCR_MASK);
+	int32_t bytes_xferred = Reload_DMA_Byte_Count - (DMA0->DMA[ch].DSR_BCR & DMA_DSR_BCR_BCR_MASK);//# of bytes already transfered
 	if (bytes_xferred < 0)
 		return -1;
-	switch ((DMA0->DMA[ch].DCR & DMA_DCR_SSIZE_MASK) >> DMA_DCR_SSIZE_SHIFT)  {
+	switch ((DMA0->DMA[ch].DCR & DMA_DCR_SSIZE_MASK) >> DMA_DCR_SSIZE_SHIFT)  {//defines bytes per transfered
 		case 0: 
 			return bytes_xferred/4;
 			break;
@@ -69,6 +75,10 @@ int32_t Get_DMA_Transfers_Completed(uint32_t ch) {
 	}
 }
 
+//initialize src/dest registers
+//set bytes per transfer
+//connect DMA to hardware trigger
+//begin playback
 void Start_DMA_Playback() {
 	// Select TPM2 overflow as trigger for DMA
 	DMAMUX0->CHCFG[0] = DMAMUX_CHCFG_SOURCE(56);   
@@ -90,6 +100,10 @@ void Start_DMA_Playback() {
 }
 
 
+//"DMA transfer complete" interrupt
+//Clears completion flag
+//Reload params
+//Signal to refill just-used buffer
 void DMA0_IRQHandler(void) {
 	// Clear done flag 
 	DMA0->DMA[0].DSR_BCR = DMA_DSR_BCR_DONE_MASK; 
