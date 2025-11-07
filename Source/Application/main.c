@@ -638,9 +638,9 @@ int main (void) {
 	LCD_Erase();
 	Control_RGB_LEDs(0,0,0);			
 
-	osKernelInitialize();
-	Create_OS_Objects();
-	EventRecorderInitialize(EventRecordAll, 1U);
-	osKernelStart();	
-	while(1);
+	osKernelInitialize();//Initialize Kernal data structures-must be done before creating application tasks
+	Create_OS_Objects();//creates all threads and synch mechanisms
+	EventRecorderInitialize(EventRecordAll, 1U);//logs all tasks
+	osKernelStart();//RTOS scheduler takes control- main no longer runs
+	while(1);//infinite loop so RTOS handles all tasks
 }
