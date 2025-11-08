@@ -15,17 +15,18 @@ void i2c_init(void)
 	PORTE->PCR[24] &= ~PORT_PCR_MUX_MASK;          
 	PORTE->PCR[25] &= ~PORT_PCR_MUX_MASK;          
 
-	PORTE->PCR[24] |= PORT_PCR_MUX(5);
-	PORTE->PCR[25] |= PORT_PCR_MUX(5);
+	//MUX(5) is specific to I2C
+	PORTE->PCR[24] |= PORT_PCR_MUX(5);//clock line
+	PORTE->PCR[25] |= PORT_PCR_MUX(5);//data line
 
 	//set to 100k baud
 	//baud = bus freq/(scl_div+mul)
  	//~400k = 24M/(64); icr=0x12 sets scl_div to 64
 
- 	I2C0->F = (I2C_F_ICR(0x00) | I2C_F_MULT(0));
+ 	I2C0->F = (I2C_F_ICR(0x00) | I2C_F_MULT(0));//I2CF defines baud rate
 		
 	//enable i2c and set to master mode
-	I2C0->C1 |= (I2C_C1_IICEN_MASK);
+	I2C0->C1 |= (I2C_C1_IICEN_MASK);//I2C_C1 powers state machine
 	
 	// Select high drive mode
 	I2C0->C2 |= (I2C_C2_HDRS_MASK);
